@@ -1,0 +1,10 @@
+{
+    "uri" : "mongodb://localhost",
+    "threads" : 20,
+    "database" : "linktest",
+    "collection" : "one",
+    "cardinality" : 20,
+    "records" : 1000000,
+    "calls" : 100000,
+    "payLoadBytes" : 2048
+}
