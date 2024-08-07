@@ -115,21 +115,22 @@ public class ManyLinkTest {
             long totalCalls = testConfig.getInteger("calls");
             int callsPerThread = (int) totalCalls / numberOfThreads;
 
-            for (int direction = 0; direction < 2; direction++) {
+            for (int direction = 0; direction < 3; direction++) {
                 // 0 = Simple, 1 = $in
-                boolean useIn = (direction == 1);
+
                 ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
                 logger.info("Starting Timing");
                 Date startTime = new Date();
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
                     executorService.submit(
-                            new DatabaseTask(collection, callsPerThread, threadNo == 0, useIn));
+                            new DatabaseTask(collection, callsPerThread, threadNo == 0, direction,
+                                    linkCardinality == 0));
                 }
                 executorService.shutdown();
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
                 Date endTime = new Date();
                 long timeTaken = endTime.getTime() - startTime.getTime();
-                logger.info("Direction " + (direction == 0 ? "Simple" : "using $in"));
+                logger.info("Direction " + direction);
                 logger.info("Time: " + timeTaken + " ms Operations/s = " + (totalCalls * 1000 / timeTaken));
             }
 
@@ -146,16 +147,20 @@ class DatabaseTask implements Runnable {
     private int callsPerThread;
     private boolean report;
     private boolean useIn;
+    private boolean single;
     private Random rng;
     private int nDocs;
+    private boolean noLinks;
 
-    public DatabaseTask(MongoCollection<Document> collection, int callsPerThread, boolean report, boolean useIn) {
+    public DatabaseTask(MongoCollection<Document> collection, int callsPerThread, boolean report, int direction, boolean noLinks) {
         this.collection = collection;
         this.callsPerThread = callsPerThread;
         this.report = report;
         this.rng = new Random();
         this.nDocs = Math.toIntExact(collection.estimatedDocumentCount());
-        this.useIn = useIn;
+        this.useIn = (direction == 1);
+        this.single = (direction == 2);
+        this.noLinks = noLinks;
     }
 
     @Override
@@ -167,21 +172,34 @@ class DatabaseTask implements Runnable {
         for (int op = 0; op < callsPerThread; op++) {
             // Fetch a Document and the Things linked to It Many to Many
 
-            Bson pickDoc = match(eq("_id", rng.nextInt(1, nDocs)));
-            Bson fetchJoined;
-            if (useIn) {
-                fetchJoined = lookup(collection.getNamespace().getCollectionName(),
-                        "links", "_id", "joined");
+            if (single) {
+                Bson pickDocs = match(eq("links", rng.nextInt(1, nDocs)));
+
+                ArrayList<Document> target = new ArrayList<Document>();
+                collection.aggregate(asList(pickDocs)).into(target);
             } else {
-                fetchJoined = lookup(collection.getNamespace().getCollectionName(),
-                        "_id", "links", "joined");
-            }
-            Document rval = collection.aggregate(asList(pickDoc, fetchJoined)).first();
-            if (op == 0 && report) {
-                logger.info( "[ "+ pickDoc.toBsonDocument().toJson() +
-                 "," + fetchJoined.toBsonDocument().toJson()+ " ]");
-                logger.info(fetchJoined.toString());
-                logger.info("JSON bytes = " + rval.toJson().length());
+                Bson pickDoc = match(eq("_id", rng.nextInt(1, nDocs)));
+                Bson fetchJoined;
+                if (useIn) {
+                    fetchJoined = lookup(collection.getNamespace().getCollectionName(),
+                            "links", "_id", "joined");
+                } else {
+                    fetchJoined = lookup(collection.getNamespace().getCollectionName(),
+                            "_id", "links", "joined");
+                }
+
+                Document rval = null;
+                if (noLinks) {
+                    rval = collection.aggregate(asList(pickDoc)).first();
+                } else {
+                    rval = collection.aggregate(asList(pickDoc, fetchJoined)).first();
+                }
+                if (op == 0 && report) {
+                    logger.info("[ " + pickDoc.toBsonDocument().toJson() +
+                            "," + fetchJoined.toBsonDocument().toJson() + " ]");
+                    logger.info(fetchJoined.toString());
+                    logger.info("JSON bytes = " + rval.toJson().length());
+                }
             }
         }
 

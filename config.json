@@ -3,8 +3,8 @@
     "threads" : 20,
     "database" : "linktest",
     "collection" : "one",
-    "cardinality" : 20,
+    "cardinality" : 100,
     "records" : 1000000,
-    "calls" : 100000,
-    "payLoadBytes" : 2048
+    "calls" : 5000000,
+    "payLoadBytes" : 40
 }
