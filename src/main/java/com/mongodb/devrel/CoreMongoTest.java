@@ -66,7 +66,9 @@ public class CoreMongoTest {
                 testConfig.put("mode",testMode);
  
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
-                    executorService.submit(new IndexSpeedTest(mongoClient, testConfig, threadNo));
+                    BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient, testConfig, threadNo);
+           
+                    executorService.submit(t);
                 }
                 executorService.shutdown();
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);

@@ -7,6 +7,5 @@
     "calls" : 1000000,
     "payLoadBytes" : 2048,
     "testModes" : [ "_id", "key", "mkey"],
-    "rangesize":100,
-    "testName" : "com.mongodb.devrel.IndexRangeSpeedTest"
+    "testName" : "com.mongodb.devrel.IndexSpeedTest"
 }

@@ -38,7 +38,7 @@ public class IndexRangeSpeedTest extends BaseMongoTest {
         coll_two = database.getCollection("two");
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(OtherSpeedTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(IndexRangeSpeedTest.class);
 
     @Override
     public void run() {
@@ -48,14 +48,21 @@ public class IndexRangeSpeedTest extends BaseMongoTest {
         int nThreads = testConfig.getInteger("threads");
         String testMode = testConfig.getString("mode");
         int nOps = nTests / nThreads;
+        int rangeSize = testConfig.getInteger("rangesize");
         for (int o = 0; o < nOps; o++) {
-            int id = rng.nextInt(nDocs);
-            Bson query = combine(gte(testMode,id),lt(testMode,id+100)); //Super simple on for testMode
+            int id = rng.nextInt(nDocs-rangeSize);
+            Bson query;
+            if( testMode.equals("mkey")) {
+                Document e = new Document("$gte",id).append("$lt", id+rangeSize);
+                query = com.mongodb.client.model.Filters.elemMatch(testMode,e);
+            } else {
+            query = and(gte(testMode,id),lt(testMode,id+rangeSize)); //Super simple on for testMode
+            }
             Bson projection = include("pl");
             ArrayList<Document> target = new ArrayList<Document>();
-            Document r = coll_one.find(query).projection(projection).into(target);
+            coll_one.find(query).projection(projection).into(target);
             if(this.threadNo == 0 && o==0) {
-                logger.info("Testing " +testMode + " "  + nOps + " calls like " + query.toString());
+                logger.info("Testing " +testMode + " "  + nOps + " calls like " + query.toBsonDocument().toJson());
             }
         }
     }
