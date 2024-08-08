@@ -2,9 +2,10 @@
     "uri" : "mongodb://localhost",
     "threads" : 20,
     "database" : "linktest",
-    "collection" : "one",
     "cardinality" : 100,
     "records" : 1000000,
-    "calls" : 5000000,
-    "payLoadBytes" : 40
+    "calls" : 10000000,
+    "payLoadBytes" : 2048,
+    "testModes" : [ "_id", "key", "mkey"],
+    "testName" : "com.mongodb.devrel.OtherSpeedTest"
 }
