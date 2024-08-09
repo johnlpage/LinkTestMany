@@ -55,7 +55,7 @@ public class IndexSpeedTest extends BaseMongoTest {
             Document r = coll_one.find(query).projection(projection).first();
             if (this.threadNo == 0 && o == 0) {
                 logger.info("Testing " + testMode + " " + nTests + " calls like " + query.toBsonDocument().toJson());
-                logger.info("Data Return Size (MB) : " + ((r.toJson().length() * nTests) / (1024*1024)));
+                logger.info("Data Return Size (MB) : " + ((long)((long)r.toJson().length() * (long)nTests) / (1024*1024)));
             }
         }
 
