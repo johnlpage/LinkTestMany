@@ -10,3 +10,4 @@ git clone https://github.com/johnlpage/LinkTestMany.git
 cd LinkTestMany
 mvn clean package
 
+ export JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"

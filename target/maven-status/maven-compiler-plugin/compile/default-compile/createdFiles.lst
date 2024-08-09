@@ -2,3 +2,4 @@ com/mongodb/devrel/CoreMongoTest.class
 com/mongodb/devrel/BaseMongoTest.class
 com/mongodb/devrel/IndexRangeSpeedTest.class
 com/mongodb/devrel/IndexSpeedTest.class
+com/mongodb/devrel/LinkSpeedTest.class

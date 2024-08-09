@@ -8,6 +8,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 
+import javax.print.Doc;
+
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +43,12 @@ public class CoreMongoTest {
         MongoClient mongoClient = null;
         ;
         try {
-            mongoClient = MongoClients.create(testConfig.getString("uri"));
+            String mongoURI = System.getenv("MONGO_URI");
+            if(mongoURI == null) {
+                logger.error("MONGO_URI not defined");
+                System.exit(1);
+            }
+            mongoClient = MongoClients.create(mongoURI);
             Document rval = mongoClient.getDatabase("admin").runCommand(new Document("ping", 1));
             logger.info(rval.toJson());
         } catch (Exception e) {
@@ -73,6 +80,13 @@ public class CoreMongoTest {
                 executorService.shutdown();
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
+                Document statusBefore = null;
+                Document statusAfter = null;
+          
+                    statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus",1));
+        
+
+                
                 executorService = Executors.newFixedThreadPool(numberOfThreads);
                 logger.info("Test Live Run");
                 Date startTime = new Date();
@@ -85,6 +99,14 @@ public class CoreMongoTest {
                 Date endTime = new Date();
                 long timeTaken = endTime.getTime() - startTime.getTime();
                 long opsPerSecond = (testConfig.getInteger("calls") * 1000) / timeTaken;
+
+                    statusAfter = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus",1));
+                    
+            
+                long cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
+                long ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
+                
+                logger.info("Bytes Read Into Cache during test: " + (ca-cb));
                 logger.info("Time: " + timeTaken + " ms " + opsPerSecond + " ops/s");
             }
 

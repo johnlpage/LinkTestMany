@@ -27,7 +27,7 @@ public class IndexSpeedTest extends BaseMongoTest {
     private Random rng;
     MongoDatabase database;
     MongoCollection<Document> coll_one;
-    MongoCollection<Document> coll_two;
+
 
     IndexSpeedTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
@@ -35,28 +35,32 @@ public class IndexSpeedTest extends BaseMongoTest {
         this.rng = new Random();
         database = mongoClient.getDatabase(testConfig.getString("database"));
         coll_one = database.getCollection("one");
-        coll_two = database.getCollection("two");
     }
 
     private static final Logger logger = LoggerFactory.getLogger(IndexSpeedTest.class);
 
     @Override
     public void run() {
-       // logger.info("Starting test.");
+        // logger.info("Starting test.");
         int nDocs = testConfig.getInteger("records");
         int nTests = testConfig.getInteger("calls");
         int nThreads = testConfig.getInteger("threads");
         String testMode = testConfig.getString("mode");
+
         int nOps = nTests / nThreads;
         for (int o = 0; o < nOps; o++) {
             int id = rng.nextInt(nDocs);
-            Bson query = eq(testMode,id); //Super simple one for testMode
-            Bson projection = include("pl");
+            Bson query = eq(testMode, id); // Super simple one for testMode
+            Bson projection = include("spl");
             Document r = coll_one.find(query).projection(projection).first();
-            if(this.threadNo == 0 && o==0) {
-                logger.info("Testing " +testMode + " "  + nOps + " calls like " + query.toString());
+            if (this.threadNo == 0 && o == 0) {
+                logger.info("Testing " + testMode + " " + nOps + " calls like " + query.toBsonDocument().toJson());
+                logger.info("Data Return Size (MB) : " + ((r.toJson().length() * nTests) / (1024*1024)));
             }
         }
+
+       
+
     }
 
     public void GenerateData() {
@@ -71,7 +75,6 @@ public class IndexSpeedTest extends BaseMongoTest {
             return;
         }
         logger.info("Generating sample data");
-        List<Integer> linkSizes = asList(1, 5, 10, 25, 50, 100);
         List<Document> docs = new ArrayList<Document>();
         for (int id = 1; id <= nDocs; id++) {
             Document d = new Document();
@@ -79,37 +82,26 @@ public class IndexSpeedTest extends BaseMongoTest {
             d.put("_id", id);
             d.put("key", id);
             d.put("mkey", asList(id));
-            d.put("pl", "Small Payload");
+            d.put("spl", "Small Payload");
             byte[] byteArray = new byte[payloadbytes];
             rng.nextBytes(byteArray);
-            Binary payload = new Binary(byteArray);
-            d.put("payload", payload);
-            for (Integer c : linkSizes) {
-                List<Integer> links = new ArrayList<Integer>();
-                for (int l = 0; l < c; l++) {
-                    links.add(rng.nextInt(1, nDocs));
-                }
-                d.put("links_" + c, links);
-            }
+            Binary largePayload = new Binary(byteArray);
+            d.put("lpl", largePayload);
+
             docs.add(d);
             if (docs.size() == 1000) {
                 logger.info("Added " + id);
                 coll_one.insertMany(docs);
-                coll_two.insertMany(docs);
                 docs = new ArrayList<Document>();
             }
         }
         // Create
         logger.info("Building Indexes");
-        for (Integer c : linkSizes) {
-            coll_one.createIndex(new Document("links_" + c, 1));
-            coll_two.createIndex(new Document("links_" + c, 1));
-            coll_one.createIndex(new Document("key", 1));
-            coll_one.createIndex(new Document("mkey", 1));
-            coll_two.createIndex(new Document("key", 1));
-            coll_two.createIndex(new Document("mkey", 1));
-        }
+        coll_one.createIndex(new Document("key", 1));
+        coll_one.createIndex(new Document("mkey", 1));
     }
+
+    
 
     public void WarmCache() {
         logger.info("Warming Cache");
@@ -117,7 +109,6 @@ public class IndexSpeedTest extends BaseMongoTest {
         // Has to check every document for this non existent field
         Bson touch = group("$nonexistent", sum("count", 1));
         Document rval = coll_one.aggregate(asList(touch)).first();
-        rval = coll_two.aggregate(asList(touch)).first();
         logger.info("Warming Done " + rval.toJson());
     }
 }

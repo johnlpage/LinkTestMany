@@ -1,5 +1,4 @@
 {
-    "uri" : "mongodb://localhost",
     "threads" : 20,
     "database" : "linktest",
     "cardinality" : 100,
