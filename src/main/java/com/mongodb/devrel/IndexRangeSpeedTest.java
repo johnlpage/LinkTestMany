@@ -57,7 +57,7 @@ public class IndexRangeSpeedTest extends BaseMongoTest {
             } else {
             query = and(gte(testMode,id),lt(testMode,id+rangeSize)); //Super simple on for testMode
             }
-            Bson projection = include("pl");
+            Bson projection = include("spl");
             ArrayList<Document> target = new ArrayList<Document>();
             coll_one.find(query).projection(projection).into(target);
             if (this.threadNo == 0 && o == 0) {
