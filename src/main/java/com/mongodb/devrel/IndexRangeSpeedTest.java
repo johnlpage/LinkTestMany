@@ -60,8 +60,9 @@ public class IndexRangeSpeedTest extends BaseMongoTest {
             Bson projection = include("pl");
             ArrayList<Document> target = new ArrayList<Document>();
             coll_one.find(query).projection(projection).into(target);
-            if(this.threadNo == 0 && o==0) {
-                logger.info("Testing " +testMode + " "  + nOps + " calls like " + query.toBsonDocument().toJson());
+            if (this.threadNo == 0 && o == 0) {
+                logger.info("Testing " + testMode + " " + nTests + " calls like " + query.toBsonDocument().toJson());
+                logger.info("Data Return Size (MB) : " + ((long)((long)target.get(0).toJson().length() * target.size() * (long)nTests) / (1024*1024)));
             }
         }
     }
