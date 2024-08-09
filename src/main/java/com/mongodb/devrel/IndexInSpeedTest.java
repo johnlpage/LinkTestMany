@@ -57,7 +57,7 @@ public class IndexInSpeedTest extends BaseMongoTest {
                 values.add(id);
             }
            
-            query = in(testMode,values);mvn clean package //Super simple on for testMode
+            query = in(testMode,values);//Super simple on for testMode
             
             Bson projection = include("spl");
             ArrayList<Document> target = new ArrayList<Document>();
