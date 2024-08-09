@@ -51,7 +51,7 @@ public class IndexSpeedTest extends BaseMongoTest {
         for (int o = 0; o < nOps; o++) {
             int id = rng.nextInt(nDocs);
             Bson query = eq(testMode, id); // Super simple one for testMode
-            Bson projection = include("spl");
+            Bson projection = include("lpl");
             Document r = coll_one.find(query).projection(projection).first();
             if (this.threadNo == 0 && o == 0) {
                 logger.info("Testing " + testMode + " " + nTests + " calls like " + query.toBsonDocument().toJson());
