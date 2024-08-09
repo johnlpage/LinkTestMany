@@ -44,7 +44,7 @@ public class CoreMongoTest {
         ;
         try {
             String mongoURI = System.getenv("MONGO_URI");
-            if(mongoURI == null) {
+            if (mongoURI == null) {
                 logger.error("MONGO_URI not defined");
                 System.exit(1);
             }
@@ -57,24 +57,26 @@ public class CoreMongoTest {
         }
 
         try {
-            
+
             Class testClass = Class.forName(testConfig.getString("testName"));
-            BaseMongoTest test = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient, testConfig, 0);
-           
+            BaseMongoTest test = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,
+                    testConfig, 0);
+
             test.GenerateData();
             test.WarmCache();
 
             int numberOfThreads = testConfig.getInteger("threads", 20);
 
-            for (String testMode : testConfig.getList("testModes",String.class)) {
+            for (String testMode : testConfig.getList("testModes", String.class)) {
                 logger.info("Test Warmup Run");
 
                 ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-                testConfig.put("mode",testMode);
- 
+                testConfig.put("mode", testMode);
+
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
-                    BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient, testConfig, threadNo);
-           
+                    BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,
+                            testConfig, threadNo);
+
                     executorService.submit(t);
                 }
                 executorService.shutdown();
@@ -82,16 +84,15 @@ public class CoreMongoTest {
 
                 Document statusBefore = null;
                 Document statusAfter = null;
-          
-                    statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus",1));
-        
 
-                
+                statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
+
                 executorService = Executors.newFixedThreadPool(numberOfThreads);
                 logger.info("Test Live Run");
                 Date startTime = new Date();
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
-                    BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient, testConfig, threadNo);
+                    BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,
+                            testConfig, threadNo);
                     executorService.submit(t);
                 }
                 executorService.shutdown();
@@ -100,26 +101,29 @@ public class CoreMongoTest {
                 long timeTaken = endTime.getTime() - startTime.getTime();
                 long opsPerSecond = (testConfig.getInteger("calls") * 1000) / timeTaken;
 
-                    statusAfter = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus",1));
-                    
-            
+                statusAfter = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
+
                 long cb;
                 long ca;
-                //Work round data change in 7.3!
+                // Work round data change in 7.3!
                 try {
-                cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getInteger("bytes read into cache");
-                ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getInteger("bytes read into cache");
-                } catch(Exception e) {
-                    cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
-                    ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
+                    cb = statusBefore.get("wiredTiger", Document.class).get("cache", Document.class)
+                            .getInteger("bytes read into cache");
+                    ca = statusAfter.get("wiredTiger", Document.class).get("cache", Document.class)
+                            .getInteger("bytes read into cache");
+                } catch (Exception e) {
+                    cb = statusBefore.get("wiredTiger", Document.class).get("cache", Document.class)
+                            .getLong("bytes read into cache");
+                    ca = statusAfter.get("wiredTiger", Document.class).get("cache", Document.class)
+                            .getLong("bytes read into cache");
                 }
-                logger.info("Bytes Read Into Cache during test: " + (ca-cb));
+                logger.info("Bytes Read Into Cache during test: " + (ca - cb));
                 logger.info("Time: " + timeTaken + " ms " + opsPerSecond + " ops/s");
             }
 
         } catch (Exception e) {
 
-            logger.error("An error occurred: " +  e.getMessage());
+            logger.error("An error occurred: " + e.getMessage());
         }
     }
 }
