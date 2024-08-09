@@ -103,16 +103,23 @@ public class CoreMongoTest {
                     statusAfter = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus",1));
                     
             
-                long cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
-                long ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
-                
+                long cb;
+                long ca;
+                //Work round data change in 7.3!
+                try {
+                cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getInteger("bytes read into cache");
+                ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getInteger("bytes read into cache");
+                } catch(Exception e) {
+                    cb =statusBefore.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
+                    ca =statusAfter.get("wiredTiger",Document.class).get("cache",Document.class).getLong("bytes read into cache");
+                }
                 logger.info("Bytes Read Into Cache during test: " + (ca-cb));
                 logger.info("Time: " + timeTaken + " ms " + opsPerSecond + " ops/s");
             }
 
         } catch (Exception e) {
 
-            logger.error("An error occurred while connecting to MongoDB", e);
+            logger.error("An error occurred: " +  e.getMessage());
         }
     }
 }

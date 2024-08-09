@@ -7,7 +7,7 @@ sudo yum install -y java-21 git maven
 
 git clone https://github.com/johnlpage/LinkTestMany.git
 
+ export JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
 cd LinkTestMany
 mvn clean package
 
- export JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
