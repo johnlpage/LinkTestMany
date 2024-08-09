@@ -1,0 +1,11 @@
+{
+    "threads" : 20,
+    "database" : "linktest",
+    "cardinality" : 100,
+    "records" : 1000000,
+    "calls" : 1000000,
+    "payLoadBytes" : 2048,
+    "testModes" : [ "_id", "key", "mkey"],
+    "rangesize":100,
+    "testName" : "com.mongodb.devrel.IndexInSpeedTest"
+}
