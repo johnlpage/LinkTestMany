@@ -2,6 +2,9 @@ package com.mongodb.devrel;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Aggregates.lookup;
+import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Aggregates.project;
 import static java.util.Arrays.asList;
 
 import java.util.ArrayList;
@@ -28,34 +31,61 @@ public class LinkSpeedTest extends BaseMongoTest {
     MongoDatabase database;
     MongoCollection<Document> coll_one;
     MongoCollection<Document> coll_two;
+    int cardinality;
 
     LinkSpeedTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
         this.threadNo = threadNo;
         this.rng = new Random();
+        this.cardinality = config.getInteger("cardinality", 1);
         database = mongoClient.getDatabase(testConfig.getString("database"));
         coll_one = database.getCollection("links_one");
         coll_two = database.getCollection("links_two");
+
     }
 
     private static final Logger logger = LoggerFactory.getLogger(LinkSpeedTest.class);
 
     @Override
     public void run() {
-       // logger.info("Starting test.");
         int nDocs = testConfig.getInteger("records");
         int nTests = testConfig.getInteger("calls");
         int nThreads = testConfig.getInteger("threads");
         String testMode = testConfig.getString("mode");
         int nOps = nTests / nThreads;
+        String[] parts = testMode.split("->");
+   
+        if (parts[0].equals("links")) {
+            parts[0] = parts[0] + "_" +cardinality;
+        }
+        if (parts[1].equals("links")) {
+            parts[1] = parts[1] + "_"+ cardinality;
+        }
+     
+
         for (int o = 0; o < nOps; o++) {
-            int id = rng.nextInt(nDocs);
-            Bson query = eq(testMode,id); //Super simple one for testMode
-            Bson projection = include("pl");
-            Document r = coll_one.find(query).projection(projection).first();
-            if(this.threadNo == 0 && o==0) {
-                logger.info("Testing " +testMode + " "  + nOps + " calls like " + query.toString());
+            int id = rng.nextInt(nDocs); // Top Document
+
+          
+             Bson pickDoc = match(eq("_id", id));
+            // Same collection
+            Bson fetchJoined = lookup(coll_one.getNamespace().getCollectionName(),
+             parts[0], parts[1], "joined");
+        
+            Bson projections = project(fields(include("spl", "joined.spl")));
+
+            List<Bson> pipeline = asList(pickDoc, fetchJoined,projections);
+            Document rval = coll_one.aggregate(pipeline).first();
+
+            
+          
+            if (this.threadNo == 0 && o == 0) {
+                logger.info("Testing Querying " + parts[1] + " for values in " + parts[0] );
+                for(Bson b : pipeline) { logger.info(b.toBsonDocument().toJson()); }
+                logger.info("Testing " +  nOps + " calls like " +  rval.toJson());
+                logger.info("Data Return Size (MB) : " + ((long)((long)rval.toJson().length() * (long)nTests) / (1024*1024)));
             }
+            
         }
     }
 
@@ -67,7 +97,7 @@ public class LinkSpeedTest extends BaseMongoTest {
         Random rng = new Random();
         long docCount = coll_one.estimatedDocumentCount();
         if (docCount > 0) {
-            logger.info("Sample data already exists");
+            logger.info("Sample data already exists " + docCount + "docs");
             return;
         }
         logger.info("Generating sample data");
