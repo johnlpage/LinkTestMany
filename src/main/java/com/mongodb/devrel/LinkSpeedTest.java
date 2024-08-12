@@ -132,14 +132,14 @@ public class LinkSpeedTest extends BaseMongoTest {
         // Create
         logger.info("Building Indexes");
         for (Integer c : linkSizes) {
+            logger.info("col_1.links"+c)
             coll_one.createIndex(new Document("links_" + c, 1));
+            logger.info("col_1.links"+c)
             coll_two.createIndex(new Document("links_" + c, 1));
-            coll_one.createIndex(new Document("key", 1));
-            coll_one.createIndex(new Document("mkey", 1));
-            coll_two.createIndex(new Document("key", 1));
-            coll_two.createIndex(new Document("mkey", 1));
         }
-    }
+
+        }
+    
 
     public void WarmCache() {
         logger.info("Warming Cache");
