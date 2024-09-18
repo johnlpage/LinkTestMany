@@ -50,9 +50,10 @@ public class DeQueueTest extends BaseMongoTest {
         //Run until we don't find any
         Bson findNew = eq("state","New");
         
-
+        Double skipRatio = testConfig.getDouble("skipRatio");
+        if(skipRatio == null) { skipRatio = 0.1;}
         Document randExpression = new Document("$rand", new Document());
-        Document skipRandom = new Document("$gt", asList(0.1, randExpression));
+        Document skipRandom = new Document("$gt", asList(skipRatio, randExpression));
    
         String testMode = testConfig.getString("mode");
         if(testMode.equals("expr")) {
