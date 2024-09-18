@@ -1,4 +1,5 @@
 package com.mongodb.devrel;
+
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static java.util.Arrays.asList;
@@ -8,7 +9,6 @@ import java.util.ArrayList;
 import static com.mongodb.client.model.Filters.*;
 
 import static com.mongodb.client.model.Updates.*;
-
 
 import java.util.List;
 import java.util.Random;
@@ -44,40 +44,47 @@ public class DeQueueTest extends BaseMongoTest {
 
     @Override
     public void run() {
-        //No warmup run in this one
-        if(testConfig.getBoolean("warmup", false)) { logger.info("No Warmup Run");
-        logger.info("Thread " + threadNo) ;                                                         return; }
-        //Run until we don't find any
-        Bson findNew = eq("state","New");
-        
+        // No warmup run in this one
+        if (testConfig.getBoolean("warmup", false)) {
+            return;
+        }
+        // Run until we don't find any
+        Bson findNew = eq("state", "New");
+
         Double skipRatio = testConfig.getDouble("skipRatio");
-        if(skipRatio == null) { skipRatio = 0.1;}
+        if (skipRatio == null) {
+            skipRatio = 0.1;
+        }
         Document randExpression = new Document("$rand", new Document());
         Document skipRandom = new Document("$gt", asList(skipRatio, randExpression));
-   
-        String testMode = testConfig.getString("mode");
-        if(testMode.equals("expr")) {
-            findNew = and(findNew,expr(skipRandom));
-        }
-        Bson claim = set("state","InProgress");
-        //Need to get the doc back
-        int retries = 10; //How many times to not find anythign before declaring done
-        logger.info(findNew.toBsonDocument().toJson());
 
-        while(retries > 0) 
-        {
-            Document rval = coll_one.findOneAndUpdate(findNew,claim);
-           if(rval == null) {retries--;}
+        String testMode = testConfig.getString("mode");
+        if (testMode.equals("expr")) {
+            findNew = and(findNew, expr(skipRandom));
+        }
+        Bson claim = set("state", "InProgress");
+        // Need to get the doc back
+        int retries = 10; // How many times to not find anythign before declaring done
+        if (threadNo == 0) {
+            logger.info(findNew.toBsonDocument().toJson());
+        }
+
+        while (retries > 0) {
+            Document rval = coll_one.findOneAndUpdate(findNew, claim);
+            if (rval == null) {
+                retries--;
+            }
 
         }
 
     }
 
     public void GenerateData() {
-        //WE NEED TO REGENRATE PER TEST MODE
-        //THIS IS ONLY CALLED ONECE
+        // WE NEED TO REGENRATE PER TEST MODE
+        // THIS IS ONLY CALLED ONECE
 
     }
+
     public void WarmCache() {
     }
 
@@ -106,12 +113,12 @@ public class DeQueueTest extends BaseMongoTest {
             d.put("payload", largePayload);
             docs.add(d);
             if (docs.size() == 1000) {
-                //logger.info("Added " + id);
+                // logger.info("Added " + id);
                 coll_one.insertMany(docs);
                 docs = new ArrayList<Document>();
             }
         }
-        if (docs.size() >0 ) {
+        if (docs.size() > 0) {
             coll_one.insertMany(docs);
             docs = new ArrayList<Document>();
         }
@@ -122,5 +129,4 @@ public class DeQueueTest extends BaseMongoTest {
 
     }
 
-   
 }
