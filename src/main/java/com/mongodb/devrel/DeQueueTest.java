@@ -139,7 +139,7 @@ public class DeQueueTest extends BaseMongoTest {
         // Create
         logger.info("Building Indexes");
 
-        coll_one.createIndex(new Document("state", 1).append("subq",1));
+        coll_one.createIndex(new Document("subq", 1).append("state",1));
 
     }
 
