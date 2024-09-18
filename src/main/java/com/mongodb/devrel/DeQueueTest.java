@@ -67,7 +67,7 @@ public class DeQueueTest extends BaseMongoTest {
         {
             Document rval = coll_one.findOneAndUpdate(findNew,claim);
            if(rval == null) {retries--;}
-           
+
         }
 
     }
@@ -105,7 +105,7 @@ public class DeQueueTest extends BaseMongoTest {
             d.put("payload", largePayload);
             docs.add(d);
             if (docs.size() == 1000) {
-                logger.info("Added " + id);
+                //logger.info("Added " + id);
                 coll_one.insertMany(docs);
                 docs = new ArrayList<Document>();
             }

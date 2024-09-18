@@ -1,7 +1,7 @@
 
-To Setup AWS Host as a Client
+#To Setup AWS Host as a Client
 
-Launch instance at least as much CPU as database server
+#Launch instance at least as much CPU as database server
 
 sudo yum install -y java-21 git maven
 
