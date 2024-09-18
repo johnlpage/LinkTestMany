@@ -119,7 +119,7 @@ public class DeQueueTest extends BaseMongoTest {
 
             d.put("_id", id);
             d.put("state", "New");
-            d.put("subqueue",rng.nextInt(100));
+            d.put("subq",rng.nextInt(100));
 
             byte[] byteArray = new byte[payloadbytes];
             rng.nextBytes(byteArray);
