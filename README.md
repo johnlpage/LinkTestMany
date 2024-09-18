@@ -1,5 +1,5 @@
 
-To Setup AWS Host
+To Setup AWS Host as a Client
 
 Launch instance at least as much CPU as database server
 

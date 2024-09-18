@@ -8,7 +8,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 
-import javax.print.Doc;
 
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -58,6 +57,7 @@ public class CoreMongoTest {
 
         try {
 
+            @SuppressWarnings("rawtypes")
             Class testClass = Class.forName(testConfig.getString("testName"));
             BaseMongoTest test = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,
                     testConfig, 0);
@@ -68,11 +68,13 @@ public class CoreMongoTest {
             int numberOfThreads = testConfig.getInteger("threads", 20);
 
             for (String testMode : testConfig.getList("testModes", String.class)) {
+                logger.info("Reset");
+                test.TestReset();
                 logger.info("Test Warmup Run");
 
                 ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
                 testConfig.put("mode", testMode);
-
+                testConfig.put("warmup", true);
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
                     BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,
                             testConfig, threadNo);
@@ -81,14 +83,14 @@ public class CoreMongoTest {
                 }
                 executorService.shutdown();
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
+                testConfig.put("warmup", false);
                 Document statusBefore = null;
                 Document statusAfter = null;
 
                 statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
 
                 executorService = Executors.newFixedThreadPool(numberOfThreads);
-                logger.info("Test Live Run");
+                logger.info("Test Live Run " + numberOfThreads + " threads");
                 Date startTime = new Date();
                 for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
                     BaseMongoTest t = (BaseMongoTest) testClass.getDeclaredConstructors()[0].newInstance(mongoClient,

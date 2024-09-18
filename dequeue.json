@@ -1,0 +1,9 @@
+{
+    "threads" : 1,
+    "database" : "linktest",
+    "records" : 100000,
+    "calls" : 100000,
+    "payLoadBytes" : 1024,
+    "testModes" : [ "simple", "expr"],
+    "testName" : "com.mongodb.devrel.DeQueueTest"
+}

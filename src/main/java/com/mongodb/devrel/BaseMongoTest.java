@@ -14,16 +14,19 @@ public class BaseMongoTest implements Runnable {
     }
 
     public   void GenerateData() {
-
+        throw new UnsupportedOperationException("Unimplemented method 'GenerateData'");
     }
 
     public  void WarmCache() {
+        return;
+    }
 
+    public  void TestReset() {
+        return;
     }
 
     @Override
     public void run() {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'run'");
     }
 }

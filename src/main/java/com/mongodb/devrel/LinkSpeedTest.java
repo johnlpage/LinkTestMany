@@ -94,13 +94,10 @@ public class LinkSpeedTest extends BaseMongoTest {
         int nDocs = testConfig.getInteger("records");
         int payloadbytes = testConfig.getInteger("payLoadBytes", 4096);
 
-        Random rng = new Random();
-        long docCount = coll_one.estimatedDocumentCount();
-        if (docCount > 0) {
-            logger.info("Sample data already exists " + docCount + "docs");
-            return;
-        }
+        
         logger.info("Generating sample data");
+        coll_one.drop();
+
         List<Integer> linkSizes = asList(1, 5, 10, 25, 50, 100);
         List<Document> docs = new ArrayList<Document>();
         for (int id = 1; id <= nDocs; id++) {
