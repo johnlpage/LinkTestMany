@@ -32,10 +32,12 @@ public class DeQueueTest extends BaseMongoTest {
     private long threadNo;
     MongoDatabase database;
     MongoCollection<Document> coll_one;
+    Random rng;
 
     DeQueueTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
         this.threadNo = threadNo;
+        this.rng = new Random();
         database = mongoClient.getDatabase(testConfig.getString("database"));
         coll_one = database.getCollection("queue");
     }
@@ -61,6 +63,16 @@ public class DeQueueTest extends BaseMongoTest {
         String testMode = testConfig.getString("mode");
         if (testMode.equals("expr")) {
             findNew = and(findNew, expr(skipRandom));
+        }
+
+        //In this one the query has the form
+        //  {{$or: [ {state:"New", subq : { $gt: x }}, {state:"New", subq: {$lte:x}} ]
+
+         if(testMode.equals("ranged")){
+            int pivot = rng.nextInt(100); // Or evn use threadid modulo X
+            Bson morequery = and(findNew,gt("subq",pivot));
+            Bson lessquery = and(findNew,lte("subq",pivot));
+            findNew = or(morequery,lessquery);
         }
         Bson claim = set("state", "InProgress");
         // Need to get the doc back
@@ -107,6 +119,7 @@ public class DeQueueTest extends BaseMongoTest {
 
             d.put("_id", id);
             d.put("state", "New");
+            d.put("subqueue",rng.nextInt(100));
 
             byte[] byteArray = new byte[payloadbytes];
             rng.nextBytes(byteArray);
@@ -126,7 +139,7 @@ public class DeQueueTest extends BaseMongoTest {
         // Create
         logger.info("Building Indexes");
 
-        coll_one.createIndex(new Document("state", 1));
+        coll_one.createIndex(new Document("state", 1).append("subq",1));
 
     }
 
