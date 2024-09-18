@@ -71,9 +71,11 @@ public class DeQueueTest extends BaseMongoTest {
          if(testMode.equals("ranged")){
             int pivot = rng.nextInt(100); // Or evn use threadid modulo X
             Bson morequery = and(findNew,gt("subq",pivot));
-            Bson lessquery = and(findNew,lte("subq",pivot));
-            findNew = or(morequery,lessquery);
+           // Bson lessquery = and(findNew,lte("subq",pivot));
+            //findNew = or(morequery,lessquery);
+            findNew = morequery;
         }
+
         Bson claim = set("state", "InProgress");
         // Need to get the doc back
         int retries = 10; // How many times to not find anythign before declaring done
