@@ -67,7 +67,7 @@ public class DeQueueTest extends BaseMongoTest {
         int retries = 10; // How many times to not find anythign before declaring done
         if (threadNo == 0) {
             logger.info(findNew.toBsonDocument().toJson());
-            logger.info("Skip Ratio" + skipRatio.toString());
+            logger.info("Skip Ratio = " + skipRatio.toString());
         }
 
         while (retries > 0) {
