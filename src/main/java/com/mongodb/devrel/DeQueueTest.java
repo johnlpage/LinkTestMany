@@ -70,7 +70,7 @@ public class DeQueueTest extends BaseMongoTest {
 
          if(testMode.equals("ranged")){
             int pivot = rng.nextInt(100); // Or evn use threadid modulo X
-            if(threadNo == 0) { pivot =0 }; //Nothign left behind
+            if(threadNo == 0) { pivot =0; } //Nothign left behind
             Bson morequery = and(findNew,gt("subq",pivot));
            // Bson lessquery = and(findNew,lte("subq",pivot));
             //findNew = or(morequery,lessquery);
