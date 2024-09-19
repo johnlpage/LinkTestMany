@@ -65,16 +65,27 @@ public class DeQueueTest extends BaseMongoTest {
             findNew = and(findNew, expr(skipRandom));
         }
 
-        //In this one the query has the form
-        //  {{$or: [ {state:"New", subq : { $gt: x }}, {state:"New", subq: {$lte:x}} ]
+        // In this one the query has the form
+        // {{$or: [ {state:"New", subq : { $gt: x }}, {state:"New", subq: {$lte:x}} ]
 
-         if(testMode.equals("ranged")){
+        if (testMode.equals("range")) {
             int pivot = rng.nextInt(100); // Or evn use threadid modulo X
-            if(threadNo == 0) { pivot =0; } //Nothign left behind
-            Bson morequery = and(findNew,gt("subq",pivot));
-           // Bson lessquery = and(findNew,lte("subq",pivot));
-            //findNew = or(morequery,lessquery);
+            if (threadNo == 0) {
+                pivot = 0;
+            } // Nothign left behind
+            Bson morequery = and(findNew, gt("subq", pivot));
             findNew = morequery;
+        }
+
+        if (testMode.equals("birange")) {
+            int pivot = rng.nextInt(100); // Or evn use threadid modulo X
+            if (threadNo == 0) {
+                pivot = 0;
+            } // Nothign left behind
+            Bson morequery = and(findNew, gt("subq", pivot));
+            Bson lessquery = and(findNew, lte("subq", pivot));
+            findNew = or(morequery, lessquery);
+
         }
 
         Bson claim = set("state", "InProgress");
@@ -122,7 +133,7 @@ public class DeQueueTest extends BaseMongoTest {
 
             d.put("_id", id);
             d.put("state", "New");
-            d.put("subq",rng.nextInt(100));
+            d.put("subq", rng.nextInt(100));
 
             byte[] byteArray = new byte[payloadbytes];
             rng.nextBytes(byteArray);
@@ -142,8 +153,8 @@ public class DeQueueTest extends BaseMongoTest {
         // Create
         logger.info("Building Indexes");
 
-        //coll_one.createIndex(new Document("subq", 1).append("state",1));
-        coll_one.createIndex(new Document("state", 1).append("subq",1));
+        // coll_one.createIndex(new Document("subq", 1).append("state",1));
+        coll_one.createIndex(new Document("state", 1).append("subq", 1));
 
     }
 
