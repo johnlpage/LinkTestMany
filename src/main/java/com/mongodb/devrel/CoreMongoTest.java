@@ -8,7 +8,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 
-
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,18 +106,23 @@ public class CoreMongoTest {
 
                 long cb;
                 long ca;
-                // Work round data change in 7.3!
+                // Work round the fact this type changes!!
                 try {
-                    cb = statusBefore.get("wiredTiger", Document.class).get("cache", Document.class)
-                            .getInteger("bytes read into cache");
-                    ca = statusAfter.get("wiredTiger", Document.class).get("cache", Document.class)
+                    cb = (long)statusBefore.get("wiredTiger", Document.class).get("cache", Document.class)
                             .getInteger("bytes read into cache");
                 } catch (Exception e) {
                     cb = statusBefore.get("wiredTiger", Document.class).get("cache", Document.class)
                             .getLong("bytes read into cache");
+                }
+
+                try {
+                    ca = (long)statusAfter.get("wiredTiger", Document.class).get("cache", Document.class)
+                            .getInteger("bytes read into cache");
+                } catch (Exception e) {
                     ca = statusAfter.get("wiredTiger", Document.class).get("cache", Document.class)
                             .getLong("bytes read into cache");
                 }
+
                 logger.info("Bytes Read Into Cache during test: " + (ca - cb));
                 logger.info("Time: " + timeTaken + " ms " + opsPerSecond + " ops/s");
             }
