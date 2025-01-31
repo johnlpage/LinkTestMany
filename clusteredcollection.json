@@ -1,0 +1,13 @@
+{
+    "threads" : 250,
+    "database" : "ibs_db",
+    "collection" : "sellingprice",
+    "nCruises" : 100,
+    "BPPerCruise" : 100,
+    "VariantsPerBP" : 100,
+    "calls" : 1000000,
+    "testModes" : [ "basic","clustered"],
+    "testName" : "com.mongodb.devrel.ClusteredCollectionTest",
+    "warmup": false
+}
+

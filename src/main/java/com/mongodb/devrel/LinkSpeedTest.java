@@ -5,33 +5,30 @@ import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.lookup;
 import static com.mongodb.client.model.Aggregates.match;
 import static com.mongodb.client.model.Aggregates.project;
-import static java.util.Arrays.asList;
-
-import java.util.ArrayList;
-
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
+import static java.util.Arrays.asList;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-
 public class LinkSpeedTest extends BaseMongoTest {
-    private long threadNo;
-    private Random rng;
+    private static final Logger logger = LoggerFactory.getLogger(LinkSpeedTest.class);
     MongoDatabase database;
     MongoCollection<Document> coll_one;
     MongoCollection<Document> coll_two;
     int cardinality;
+    private long threadNo;
+    private Random rng;
 
     LinkSpeedTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
@@ -43,8 +40,6 @@ public class LinkSpeedTest extends BaseMongoTest {
         coll_two = database.getCollection("links_two");
 
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(LinkSpeedTest.class);
 
     @Override
     public void run() {

@@ -1,38 +1,31 @@
 package com.mongodb.devrel;
 
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
 import static java.util.Arrays.asList;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
-
-import static com.mongodb.client.model.Filters.*;
-
-import static com.mongodb.client.model.Updates.*;
-
 import java.util.List;
 import java.util.Random;
-
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.result.UpdateResult;
-
 // This test simulates Multiple Consumer threads trying to edit the same documents
 // We start with N documents each of which needs updated independently
 // Generating a lot of writeConflicts
 
 public class DeQueueTest extends BaseMongoTest {
-    private long threadNo;
+    private static final Logger logger = LoggerFactory.getLogger(DeQueueTest.class);
     MongoDatabase database;
     MongoCollection<Document> coll_one;
     Random rng;
+    private long threadNo;
 
     DeQueueTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
@@ -41,8 +34,6 @@ public class DeQueueTest extends BaseMongoTest {
         database = mongoClient.getDatabase(testConfig.getString("database"));
         coll_one = database.getCollection("queue");
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(DeQueueTest.class);
 
     @Override
     public void run() {

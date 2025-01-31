@@ -2,32 +2,28 @@ package com.mongodb.devrel;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
-import static java.util.Arrays.asList;
-
-import java.util.ArrayList;
-
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
+import static java.util.Arrays.asList;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-
 public class IndexSpeedTest extends BaseMongoTest {
-    private long threadNo;
-    private Random rng;
+    private static final Logger logger = LoggerFactory.getLogger(IndexSpeedTest.class);
     MongoDatabase database;
     MongoCollection<Document> coll_one;
-
+    private long threadNo;
+    private Random rng;
 
     IndexSpeedTest(MongoClient client, Document config, long threadNo) {
         super(client, config);
@@ -36,8 +32,6 @@ public class IndexSpeedTest extends BaseMongoTest {
         database = mongoClient.getDatabase(testConfig.getString("database"));
         coll_one = database.getCollection("one");
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(IndexSpeedTest.class);
 
     @Override
     public void run() {

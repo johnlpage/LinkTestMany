@@ -1,32 +1,31 @@
 package com.mongodb.devrel;
 
+import com.mongodb.client.MongoClient;
 import org.bson.Document;
 
-import com.mongodb.client.MongoClient;
-
 public class BaseMongoTest implements Runnable {
-    protected MongoClient mongoClient;
-    protected Document testConfig;
-    
-    BaseMongoTest(MongoClient client, Document config ) {
-        this.mongoClient = client;
-        this.testConfig = config;
-    }
+  protected MongoClient mongoClient;
+  protected Document testConfig;
 
-    public   void GenerateData() {
-        throw new UnsupportedOperationException("Unimplemented method 'GenerateData'");
-    }
+  BaseMongoTest(MongoClient client, Document config) {
+    this.mongoClient = client;
+    this.testConfig = config;
+  }
 
-    public  void WarmCache() {
-        return;
-    }
+  public void GenerateData() {
+    throw new UnsupportedOperationException("Unimplemented method 'GenerateData'");
+  }
 
-    public  void TestReset() {
-        return;
-    }
+  public void WarmCache() {
+    return;
+  }
 
-    @Override
-    public void run() {
-        throw new UnsupportedOperationException("Unimplemented method 'run'");
-    }
+  public void TestReset() {
+    return;
+  }
+
+  @Override
+  public void run() {
+    throw new UnsupportedOperationException("Unimplemented method 'run'");
+  }
 }
