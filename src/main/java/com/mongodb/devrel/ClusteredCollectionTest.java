@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,11 +104,6 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
   public void GenerateData() {
 
-    int nCruises = testConfig.getInteger("nCruises");
-    int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
-
-    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
 
     long docCount = pricing.estimatedDocumentCount();
     if (docCount > 0) {
@@ -160,6 +156,11 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     clustered_pricing.createIndex(index1);
     clustered_pricing.createIndex(index2);
     clustered_pricing.createIndex(index3);
+    int nCruises = testConfig.getInteger("nCruises");
+    int BPPerCruise = testConfig.getInteger("BPPerCruise");
+    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
+
+    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
 
     List<Document> toAdd = new ArrayList<>();
     int[] docIds = new int[nDocs];
@@ -168,20 +169,29 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     }
     shuffleArray(docIds);
 
+    CreateSampleDate(pricing,docIds);
+    CreateSampleDate(clustered_pricing,docIds);
+  }
+
+  private void CreateSampleDate(MongoCollection<Document> pricing, int[] docIds) {
+
+    int nCruises = testConfig.getInteger("nCruises");
+    int BPPerCruise = testConfig.getInteger("BPPerCruise");
+    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
+
+    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
+    logger.info("Loading " + nDocs + " Docs into" + pricing.getNamespace());
+
+    List<Document> toAdd = new ArrayList<>();
     for (int o = 0; o < nDocs; o++) {
       // Pick a price code
       Document record = generateRecord();
-
-      // Add out own fields for cruise, base and variant
-      // 100 Cruises
-      // 100 Variaants
 
       Integer id = docIds[o];
       Integer CruiseCode = id % nCruises; // Last bits
       Integer basePriceCode = (id / nCruises) % BPPerCruise;
       Integer variant = (id / (nCruises * BPPerCruise) % VariantsPerBP);
       record.put("_id", "C" + CruiseCode + "B" + basePriceCode + "V" + variant);
-
       record.put("basePriceUUID", "C" + CruiseCode + "B" + basePriceCode);
       record.put("variant", variant);
 
@@ -189,13 +199,13 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
       // Iterate over all records updatin gthe price and date
       if (toAdd.size() >= 1000) {
-        pricing.insertMany(toAdd);
+        this.pricing.insertMany(toAdd);
         clustered_pricing.insertMany(toAdd);
         toAdd.clear();
       }
     }
     if (toAdd.size() > 0) {
-      pricing.insertMany(toAdd);
+      this.pricing.insertMany(toAdd);
       clustered_pricing.insertMany(toAdd);
     }
   }
@@ -254,6 +264,12 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     record.put("lastModified", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
     record.put("currencyCode", getRandomElement(Arrays.asList("USD", "EUR", "INR")));
     record.put("brand", getRandomElement(Arrays.asList("SSC", "MSC", "NOR")));
+    // Add a Blob for size
+    byte[] byteArray = new byte[3000];
+    random.nextBytes(byteArray);
+    Binary largePayload = new Binary(byteArray);
+    record.put("payload", largePayload);
+
     return record;
   }
 
