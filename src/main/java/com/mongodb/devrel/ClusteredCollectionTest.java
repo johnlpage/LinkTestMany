@@ -173,7 +173,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     CreateSampleDate(clustered_pricing,docIds);
   }
 
-  private void CreateSampleDate(MongoCollection<Document> pricing, int[] docIds) {
+  private void CreateSampleDate(MongoCollection<Document> collection, int[] docIds) {
 
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
@@ -200,14 +200,13 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
       // Iterate over all records updatin gthe price and date
       if (toAdd.size() >= 1000) {
-        this.pricing.insertMany(toAdd);
-        clustered_pricing.insertMany(toAdd);
+        collection.insertMany(toAdd);
+
         toAdd.clear();
       }
     }
     if (toAdd.size() > 0) {
-      this.pricing.insertMany(toAdd);
-      clustered_pricing.insertMany(toAdd);
+      collection.insertMany(toAdd);
     }
   }
 
