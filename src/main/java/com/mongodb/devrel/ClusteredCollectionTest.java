@@ -158,7 +158,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     clustered_pricing.createIndex(index3);
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
+    int VariantsPerBP = testConfig.getInteger("VariantsPerBP");
 
     int nDocs = nCruises * VariantsPerBP * BPPerCruise;
 
@@ -177,7 +177,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
+    int VariantsPerBP = testConfig.getInteger("VariantsPerBP");
 
     int nDocs = nCruises * VariantsPerBP * BPPerCruise;
     logger.info("Loading " + nDocs + " Docs into" + pricing.getNamespace());
@@ -192,6 +192,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
       Integer basePriceCode = (id / nCruises) % BPPerCruise;
       Integer variant = (id / (nCruises * BPPerCruise) % VariantsPerBP);
       record.put("_id", "C" + CruiseCode + "B" + basePriceCode + "V" + variant);
+      record.put("CruiseCode", "C" + CruiseCode );
       record.put("basePriceUUID", "C" + CruiseCode + "B" + basePriceCode);
       record.put("variant", variant);
 
