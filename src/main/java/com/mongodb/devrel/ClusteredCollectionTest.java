@@ -180,7 +180,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     int VariantsPerBP = testConfig.getInteger("VariantsPerBP");
 
     int nDocs = nCruises * VariantsPerBP * BPPerCruise;
-    logger.info("Loading " + nDocs + " Docs into" + pricing.getNamespace());
+    logger.info("Loading " + nDocs + " Docs into " + pricing.getNamespace());
 
     List<Document> toAdd = new ArrayList<>();
     for (int o = 0; o < nDocs; o++) {
@@ -234,13 +234,15 @@ public class ClusteredCollectionTest extends BaseMongoTest {
         "promotionCombined", getRandomSample(Arrays.asList("P1", "P2", "P3", "P4", "P5"), 3));
     priceInfo.put("LAF", getRandomInt(800, 1200));
     List<Map<String, Object>> splitUp = new ArrayList<>();
-    Map<String, Object> splitUpEntry = new HashMap<>();
-    splitUpEntry.put("chargeType", getRandomElement(Arrays.asList("CAB", "EXTRA", "TAX")));
-    splitUpEntry.put("PassengerIdentifier", String.valueOf(random.nextInt(5) + 1));
-    splitUpEntry.put("passengerType", getRandomElement(Arrays.asList("A", "C", "S")));
-    splitUpEntry.put("discount", getRandomInt(50, 200));
-    splitUpEntry.put("basePrice", getRandomInt(700, 1500));
-    splitUp.add(splitUpEntry);
+    for (int x = 0; x < 10; x++) {
+      Map<String, Object> splitUpEntry = new HashMap<>();
+      splitUpEntry.put("chargeType", getRandomElement(Arrays.asList("CAB", "EXTRA", "TAX")));
+      splitUpEntry.put("PassengerIdentifier", String.valueOf(random.nextInt(5) + 1));
+      splitUpEntry.put("passengerType", getRandomElement(Arrays.asList("A", "C", "S")));
+      splitUpEntry.put("discount", getRandomInt(50, 200));
+      splitUpEntry.put("basePrice", getRandomInt(700, 1500));
+      splitUp.add(splitUpEntry);
+    }
     priceInfo.put("splitUp", splitUp);
     sellingPriceInfo.add(priceInfo);
     record.put("sellingPriceInfo", sellingPriceInfo);
@@ -256,7 +258,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     currencyInfo.put("baseCurrency", getRandomElement(Arrays.asList("USD", "EUR", "INR", "GBP")));
     currencyInfo.put("exchangeRateCode", getRandomElement(Arrays.asList("EX1", "EX2")));
     currencyInfo.put(
-        "applicableCurrencies",
+        "sellingCurrencies",
         getRandomSample(Arrays.asList("USD", "EUR", "INR", "GBP", "CAD"), 3));
 
     record.put("currencyInfo", currencyInfo);
@@ -265,10 +267,10 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     record.put("currencyCode", getRandomElement(Arrays.asList("USD", "EUR", "INR")));
     record.put("brand", getRandomElement(Arrays.asList("SSC", "MSC", "NOR")));
     // Add a Blob for size
-    byte[] byteArray = new byte[3000];
+  /*  byte[] byteArray = new byte[3000];
     random.nextBytes(byteArray);
     Binary largePayload = new Binary(byteArray);
-    record.put("payload", largePayload);
+    record.put("payload", largePayload);*/
 
     return record;
   }
