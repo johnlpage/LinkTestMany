@@ -53,7 +53,7 @@ public class TinyEditTest extends BaseMongoTest {
     UpdateOptions options = new UpdateOptions().upsert(true);
     for (int test = 0; test < nTests; test++) {
       for (int doc = 0; doc < docsPerThread; doc++) {
-        recordId = ipHex + "_" + threadNo + "_" + test + "_" + doc;
+        recordId = ipHex + "_" + threadNo + "_" + doc;
         Bson filter = Filters.eq("_id", recordId);
         collection.updateOne(filter, update, options);
       }
