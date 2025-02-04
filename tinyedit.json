@@ -1,5 +1,5 @@
 {
-    "threads" : 1000,
+    "threads" : 400,
     "database" : "tiny",
     "collection" : "counters",
     "calls" : 10000000,

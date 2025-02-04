@@ -10,7 +10,7 @@
 ```bash
 
 export JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
-cd CoreMongoTests
+cd LinkTestMany
 mvn clean package
 
 export MONGO_URI="... YOUR URI & CREDS "
