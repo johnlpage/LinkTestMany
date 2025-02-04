@@ -1,11 +1,11 @@
 {
-    "threads" : 500,
+    "threads" : 800,
     "database" : "tiny",
     "collection" : "counters",
     "calls" : 100000,
     "testModes" : [ "basic"],
     "testName" : "com.mongodb.devrel.TinyEditTest",
     "warmup": false,
-    "docsPerThread" : 2000
+    "docsPerThread" : 10000
 }
 
