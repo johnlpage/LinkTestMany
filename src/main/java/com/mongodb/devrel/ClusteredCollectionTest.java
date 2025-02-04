@@ -13,7 +13,6 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
-import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +24,9 @@ public class ClusteredCollectionTest extends BaseMongoTest {
   MongoCollection<Document> pricing;
   MongoCollection<Document> clustered_pricing;
 
-  private long threadNo;
-
-  ClusteredCollectionTest(MongoClient client, Document config, long threadNo) {
+    ClusteredCollectionTest(MongoClient client, Document config, long threadNo) {
     super(client, config);
-    this.threadNo = threadNo;
-    database = mongoClient.getDatabase(testConfig.getString("database"));
+        database = mongoClient.getDatabase(testConfig.getString("database"));
     pricing = database.getCollection(testConfig.getString("collection"));
     clustered_pricing = database.getCollection(testConfig.getString("collection") + "_c");
   }
