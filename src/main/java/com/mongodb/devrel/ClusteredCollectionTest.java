@@ -1,48 +1,58 @@
 package com.mongodb.devrel;
 
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
+
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.UpdateResult;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ClusteredCollectionTest extends BaseMongoTest {
   private static final Logger logger = LoggerFactory.getLogger(ClusteredCollectionTest.class);
-  private static final Random random = new Random();
+
   MongoDatabase database;
+  MongoCollection<Document> base_pricing;
   MongoCollection<Document> pricing;
   MongoCollection<Document> clustered_pricing;
+  Random classRng = new Random();
 
-    ClusteredCollectionTest(MongoClient client, Document config, long threadNo) {
+
+  Document cardinality =
+          new Document()
+                  .append("categoryCode", 10)
+                  .append("orgUnit", 4)
+                  .append("market", 5)
+                  .append("bookingChannel", 3)
+                  .append("bookingType", 3)
+                  .append("sellingType", 3)
+                  .append("currencyCode", 3)
+                  .append("packageCode", 3)
+                  .append("brand", 3);
+
+
+
+  ClusteredCollectionTest(MongoClient client, Document config, long threadNo) {
     super(client, config);
-        database = mongoClient.getDatabase(testConfig.getString("database"));
+    database = mongoClient.getDatabase(testConfig.getString("database"));
     pricing = database.getCollection(testConfig.getString("collection"));
+    base_pricing = database.getCollection(testConfig.getString("refcolname"));
     clustered_pricing = database.getCollection(testConfig.getString("collection") + "_c");
-  }
-
-  private static <T> T getRandomElement(List<T> list) {
-    return list.get(random.nextInt(list.size()));
-  }
-
-  private static List<String> getRandomSample(List<String> list, int size) {
-    List<String> shuffled = new ArrayList<>(list);
-    Collections.shuffle(shuffled);
-    return shuffled.subList(0, size);
-  }
-
-  private static int getRandomInt(int min, int max) {
-    return random.nextInt((max - min) + 1) + min;
   }
 
   public static void shuffleArray(int[] array) {
@@ -67,39 +77,70 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     int nOps = nTests / nThreads;
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("BPPerCruise");
+    int meanVariantsPerBP = testConfig.getInteger("meanVariantsPerBP");
 
-    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
+    int nBasePrices = nCruises * BPPerCruise;
+
+
     MongoCollection<Document> testCollection;
-    if(testConfig.getString("mode").equals("clustered")) {
+    if (testConfig.getString("mode").equals("clustered")) {
       testCollection = clustered_pricing;
-     } else {
+    } else {
       testCollection = pricing;
     }
+    Random rng = new Random();
 
     // For all the categorical fields get all the values
-    for (int o = 0; o < nOps / VariantsPerBP; o++) {
+    for (int op = 0; op < nOps ; op++) {
 
-      // Choose a random Base price then update all the derived prices
-      int CruiseCode = getRandomInt(0, nCruises);
-      int basePriceCode = getRandomInt(0, BPPerCruise);
+      int bpid = rng.nextInt(nBasePrices);
 
-      for (int variant = 0; variant < VariantsPerBP; variant++) {
-        Document query = new Document();
-        query.put("basePriceUUID", "C" + CruiseCode + "B" + basePriceCode);
-        query.put("variant", variant);
+      int CruiseCode = bpid % nCruises; // Last bits
+      int basePriceCode = (bpid / nCruises) % BPPerCruise;
 
-        testCollection.updateOne(
-            query,
-            new Document(
-                "$set",
-                new Document("price", random.nextInt(1000)).append("lastUpdateDate", new Date())));
+
+      Document query = new Document();
+      query.put("cruiseCode", "CRS" + CruiseCode);
+      query.put("basePriceUUID", "CRS" + CruiseCode + "_BP" + basePriceCode);
+      Document BasePriceDoc = base_pricing.find(query).first();
+
+
+      rng.setSeed(bpid);
+      int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
+      for (int sp = 0; sp < nSellingPrices; sp++) {
+        Document vals = generateRecord(bpid,sp, rng);
+        //This shoudl have generated a document with all the fields we need and a few others
+
+
+        Bson updateSellingPriceKey = and(eq("cruiseCode", vals.get("cruiseCode")),
+                eq("categoryCode",vals.get("categoryCode")),
+                eq("basePriceUUID", vals.get("basePriceUUID")),
+                eq("orgUnit", vals.get("orgUnit")),
+                eq("market",vals.get("market")),
+                eq("bookingChannel",vals.get("bookingChannel")),
+                eq("bookingType",vals.get("bookingType")),
+                eq("sellingType", vals.get("sellingType")),
+                eq("currencyCode", vals.get("currencyCode")),
+                eq("packageCode",vals.get("packageCode")),
+                eq("brand", vals.get("brand")));
+
+        //logger.info(updateSellingPriceKey.toBsonDocument().toJson());
+        Bson updateSellingPrice = combine(set("lastModified", Date.from(Instant.now())),
+                set("deleted", false),
+                set("inventoryExhausted", rng.nextBoolean()),
+                set("effectiveStartDate",Instant.now()),
+                set("effectiveEndDate", Instant.now().plus(30, ChronoUnit.DAYS)));
+                set("sellingPriceInfo", vals.get("sellingPriceInfo"));
+
+          UpdateResult a = testCollection.updateOne(updateSellingPriceKey, updateSellingPrice);
+        //  logger.info(a.toString());
       }
+
+
     }
   }
 
   public void GenerateData() {
-
 
     long docCount = pricing.estimatedDocumentCount();
     if (docCount > 0) {
@@ -109,8 +150,9 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
     // Realtively large secondary indexes, one is updated frequently
     // Actually this one is used to query so will use significant RAM.
+    List<String> testModes = testConfig.getList("testModes", String.class);
 
-    Document index1 =
+    Document updatingIndex =
         new Document()
             .append("cruiseCode", 1)
             .append("categoryCode", 1)
@@ -124,7 +166,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
             .append("packageCode", 1)
             .append("brand", 1);
 
-    Document index2 =
+    Document multiKeyShoppingIndex =
         new Document()
             .append("orgUnit", 1)
             .append("market", 1)
@@ -133,142 +175,185 @@ public class ClusteredCollectionTest extends BaseMongoTest {
             .append("price", 1)
             .append("lastUpdateDate", 1);
 
-    // Index we edit using
-    Document index3 = new Document().append("basePriceUUID", 1).append("variant", 1);
+    pricing.createIndex(updatingIndex);
+    pricing.createIndex(multiKeyShoppingIndex);
 
-    pricing.createIndex(index1);
-    pricing.createIndex(index2);
-    pricing.createIndex(index3);
+    Document basePriceIndex =
+            new Document()
+                    .append("cruiseCode", 1)
+                    .append("basePriceUUID", 1);
 
-    String cname = testConfig.getString("collection") + "_c";
-    Document createCommand =
-        new Document("create", cname)
-            .append(
-                "clusteredIndex",
-                new Document("key", new Document("_id", 1)).append("unique", true));
-    // Run the command
-    database.runCommand(createCommand);
+    base_pricing.createIndex(basePriceIndex);
 
-    clustered_pricing.createIndex(index1);
-    clustered_pricing.createIndex(index2);
-    clustered_pricing.createIndex(index3);
+    if (testModes.contains("clustered")) {
+      String cname = testConfig.getString("collection") + "_c";
+      Document createCommand =
+          new Document("create", cname)
+              .append(
+                  "clusteredIndex",
+                  new Document("key", new Document("_id", 1)).append("unique", true));
+      // Run the command
+      database.runCommand(createCommand);
+
+      clustered_pricing.createIndex(updatingIndex);
+      clustered_pricing.createIndex(multiKeyShoppingIndex);
+    }
+
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("VariantsPerBP");
+    int VariantsPerBP = testConfig.getInteger("meanVariantsPerBP");
 
     int nDocs = nCruises * VariantsPerBP * BPPerCruise;
 
-    List<Document> toAdd = new ArrayList<>();
+
     int[] docIds = new int[nDocs];
     for (int o = 0; o < nDocs; o++) {
       docIds[o] = o;
     }
     shuffleArray(docIds);
 
-    CreateSampleDate(pricing,docIds);
-    CreateSampleDate(clustered_pricing,docIds);
+    CreateSampleDate(pricing, docIds);
+    if (testModes.contains("clustered")) {CreateSampleDate(clustered_pricing, docIds);}
   }
 
   private void CreateSampleDate(MongoCollection<Document> collection, int[] docIds) {
 
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
-    int VariantsPerBP = testConfig.getInteger("VariantsPerBP");
+    int meanVariantsPerBP = testConfig.getInteger("meanVariantsPerBP");
 
-    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
-    logger.info("Loading " + nDocs + " Docs into " + pricing.getNamespace());
+    int nBasePrices = nCruises * BPPerCruise;
+    logger.info("Loading " + nBasePrices + " Base Prices into " + pricing.getNamespace());
 
     List<Document> toAdd = new ArrayList<>();
-    for (int o = 0; o < nDocs; o++) {
-      // Pick a price code
-      Document record = generateRecord();
+    Random rng = new Random(); // Seeded RNG on base price
+    for (int bp = 0; bp < nBasePrices; bp++) {
+      int bpid = docIds[bp]; // Build randomly
+      rng.setSeed(bpid);
+      int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
 
-      Integer id = docIds[o];
-      Integer CruiseCode = id % nCruises; // Last bits
-      Integer basePriceCode = (id / nCruises) % BPPerCruise;
-      Integer variant = (id / (nCruises * BPPerCruise) % VariantsPerBP);
-      record.put("_id", "C" + CruiseCode + "B" + basePriceCode + "V" + variant);
-      record.put("CruiseCode", "C" + CruiseCode );
-      record.put("basePriceUUID", "C" + CruiseCode + "B" + basePriceCode);
-      record.put("variant", variant);
+      // Create a base price record
+      Document bprecord = generateRecord(bpid,1_000_000, rng);
+      base_pricing.insertOne(bprecord);
 
-      toAdd.add(record);
+      for (int sp = 0; sp < nSellingPrices; sp++) {
+        Document record = generateRecord(bpid,sp, rng);
 
-      // Iterate over all records updatin gthe price and date
-      if (toAdd.size() >= 1000) {
-        collection.insertMany(toAdd);
-
-        toAdd.clear();
+        toAdd.add(record);
+        if (toAdd.size() >= 1000) {
+          collection.insertMany(toAdd);
+          toAdd.clear();
+        }
       }
     }
-    if (toAdd.size() > 0) {
+    if (!toAdd.isEmpty()) {
       collection.insertMany(toAdd);
     }
   }
 
-  Document generateRecord() {
+  Document generateRecord(int bpid, int variant, Random rng) {
+    int nCruises = testConfig.getInteger("nCruises");
+    int BPPerCruise = testConfig.getInteger("BPPerCruise");
+    int CruiseCode = bpid % nCruises; // Last bits
+    int basePriceCode = (bpid / nCruises) % BPPerCruise;
+
+    rng.setSeed((bpid* 10000L)+variant);
     Document record = new Document();
+
+    // TODO
     record.put("_id", new ObjectId());
-    record.put("sellingType", getRandomElement(Arrays.asList("FIT", "DFIT", "CIT")));
+    record.put("cruiseCode", "CRS" + CruiseCode);
+    record.put("basePriceUUID", "CRS" + CruiseCode + "_BP" + basePriceCode);
+
+    StringBuilder sellingPriceUUID = new StringBuilder( "CRS" + CruiseCode + "_BP" + basePriceCode);
+
+    for (Map.Entry<String, Object> entry : cardinality.entrySet()) {
+      String key = entry.getKey();
+      Integer value = (Integer) entry.getValue();
+      StringBuilder valuepfxsb = new StringBuilder(key.substring(0,1).toUpperCase());
+      for (char c : key.toCharArray()) {
+        if (Character.isUpperCase(c)) {
+          valuepfxsb.append(c);
+        }
+      }
+      valuepfxsb.append(rng.nextInt(100,100+value));
+      record.put(key, valuepfxsb.toString());
+      sellingPriceUUID.append("_");
+      sellingPriceUUID.append(valuepfxsb);
+    }
+
+    record.put("sellingPriceUUID", sellingPriceUUID.toString());
+
+    // From here on down is actually random so we can edit it
+
     record.put(
         "effectiveEndDate", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-    record.put("orgUnit", getRandomElement(Arrays.asList("USA", "CAN", "EU", "APAC")));
-    record.put("ratePlanClassification", getRandomElement(Arrays.asList("ALL", "VIP", "STANDARD")));
-    record.put("categoryCode", "CAT" + getRandomInt(10, 99));
+    record.put("ratePlanClassification", getRandomElement(Arrays.asList("ALL", "VIP", "STANDARD") ));
     record.put("ratePlanCode", RandomStringUtils.randomAlphanumeric(10).toUpperCase());
-    record.put("sellingPriceUUID", UUID.randomUUID().toString());
-    record.put("market", getRandomElement(Arrays.asList("CAN", "USA", "EU", "IND")));
+
+    // Nested arrays with price into
     List<Map<String, Object>> sellingPriceInfo = new ArrayList<>();
-    Map<String, Object> priceInfo = new HashMap<>();
-    priceInfo.put("occupancy", getRandomElement(Arrays.asList("1A", "2B", "3C")));
-    priceInfo.put("basePrice", getRandomInt(500, 1500));
-    priceInfo.put("NCCF", getRandomInt(50, 150));
-    priceInfo.put("discount", getRandomInt(100, 500));
-    priceInfo.put(
-        "lastmodifiedTime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-    priceInfo.put(
-        "promotionCombined", getRandomSample(Arrays.asList("P1", "P2", "P3", "P4", "P5"), 3));
-    priceInfo.put("LAF", getRandomInt(800, 1200));
-    List<Map<String, Object>> splitUp = new ArrayList<>();
-    for (int x = 0; x < 10; x++) {
-      Map<String, Object> splitUpEntry = new HashMap<>();
-      splitUpEntry.put("chargeType", getRandomElement(Arrays.asList("CAB", "EXTRA", "TAX")));
-      splitUpEntry.put("PassengerIdentifier", String.valueOf(random.nextInt(5) + 1));
-      splitUpEntry.put("passengerType", getRandomElement(Arrays.asList("A", "C", "S")));
-      splitUpEntry.put("discount", getRandomInt(50, 200));
-      splitUpEntry.put("basePrice", getRandomInt(700, 1500));
-      splitUp.add(splitUpEntry);
+    for (int spi = 0; spi < classRng.nextInt(8) + 1; spi++) {
+      Map<String, Object> priceInfo = new HashMap<>();
+      priceInfo.put("occupancy", getRandomElement(Arrays.asList("1A", "2B", "3C") ));
+      priceInfo.put("basePrice", classRng.nextInt(500, 1500));
+      priceInfo.put("NCCF", classRng.nextInt(50, 150));
+      priceInfo.put("discount", classRng.nextInt(100, 500));
+      priceInfo.put(
+          "lastmodifiedTime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+      priceInfo.put(
+          "promotionCombined", getRandomSample(Arrays.asList("P1", "P2", "P3", "P4", "P5"), 3));
+      priceInfo.put("LAF", classRng.nextInt(800, 1200));
+      List<Map<String, Object>> splitUp = new ArrayList<>();
+      for (int su = 0; su < classRng.nextInt(10) + 1; su++) {
+        Map<String, Object> splitUpEntry = new HashMap<>();
+        splitUpEntry.put("chargeType", getRandomElement(Arrays.asList("CAB", "EXTRA", "TAX")));
+        splitUpEntry.put("PassengerIdentifier", String.valueOf(classRng.nextInt(5) + 1));
+        splitUpEntry.put("passengerType", getRandomElement(Arrays.asList("A", "C", "S")));
+        splitUpEntry.put("discount", classRng.nextInt(50, 200));
+        splitUpEntry.put("basePrice", classRng.nextInt(700, 1500));
+        splitUp.add(splitUpEntry);
+      }
+      priceInfo.put("splitUp", splitUp);
+      sellingPriceInfo.add(priceInfo);
     }
-    priceInfo.put("splitUp", splitUp);
-    sellingPriceInfo.add(priceInfo);
+
     record.put("sellingPriceInfo", sellingPriceInfo);
-    record.put("bookingChannel", getRandomElement(Arrays.asList("B2B", "B2C", "C2C")));
-    record.put("deleted", random.nextBoolean());
-    record.put("bookingType", getRandomElement(Arrays.asList("IND", "GROUP")));
-    record.put("packageCode", RandomStringUtils.randomAlphanumeric(6).toUpperCase());
+
+    record.put("deleted", classRng.nextBoolean());
+
     record.put("ratePlanTypeCode", getRandomElement(Arrays.asList("ALL", "CIT", "FIT")));
     record.put(
-        "effectiveStartDate", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-
+        "effectiveStartDate", Instant.now());
+    record.put(
+            "effectiveEndDate", Instant.now().plus(30, ChronoUnit.DAYS));
     Map<String, Object> currencyInfo = new HashMap<>();
     currencyInfo.put("baseCurrency", getRandomElement(Arrays.asList("USD", "EUR", "INR", "GBP")));
     currencyInfo.put("exchangeRateCode", getRandomElement(Arrays.asList("EX1", "EX2")));
     currencyInfo.put(
-        "sellingCurrencies",
-        getRandomSample(Arrays.asList("USD", "EUR", "INR", "GBP", "CAD"), 3));
+        "sellingCurrencies", getRandomSample(Arrays.asList("USD", "EUR", "INR", "GBP", "CAD"), 3));
 
     record.put("currencyInfo", currencyInfo);
-    record.put("inventoryExhausted", random.nextBoolean());
-    record.put("lastModified", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-    record.put("currencyCode", getRandomElement(Arrays.asList("USD", "EUR", "INR")));
-    record.put("brand", getRandomElement(Arrays.asList("SSC", "MSC", "NOR")));
-    // Add a Blob for size
-  /*  byte[] byteArray = new byte[3000];
-    random.nextBytes(byteArray);
-    Binary largePayload = new Binary(byteArray);
-    record.put("payload", largePayload);*/
+    record.put("inventoryExhausted", classRng.nextBoolean());
+    record.put("lastModified", Instant.now());
 
     return record;
+  }
+
+   List<String> getRandomSample(List<String> list, int sampleSize) {
+
+    // Create a copy of the list to avoid modifying the original
+    List<String> copy = new ArrayList<>(list);
+
+    // Shuffle the copy to randomize the order of elements
+    Collections.shuffle(copy,classRng);
+    // Return the first 'sampleSize' elements
+    return copy.subList(0, sampleSize);
+  }
+  String getRandomElement(List<String> list) {
+
+    int randomIndex = classRng.nextInt(list.size());
+    return list.get(randomIndex);
   }
 
   public void WarmCache() {

@@ -1,12 +1,13 @@
 {
-    "threads" : 250,
+    "threads" : 100,
     "database" : "cruiseline",
     "collection" : "sellingprice",
-    "nCruises" : 1500,
+    "refcolname" : "baseprice",
+    "nCruises" : 1000,
     "BPPerCruise" : 200,
-    "VariantsPerBP" : 150,
+    "meanVariantsPerBP" : 50,
     "calls" : 1000000,
-    "testModes" : [ "basic","clustered"],
+    "testModes" : [ "basic"],
     "testName" : "com.mongodb.devrel.ClusteredCollectionTest",
     "warmup": false
 }
