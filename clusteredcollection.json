@@ -6,7 +6,7 @@
     "nCruises" : 1000,
     "BPPerCruise" : 200,
     "meanVariantsPerBP" : 50,
-    "calls" : 1000000,
+    "calls" : 100000,
     "testModes" : [ "basic"],
     "testName" : "com.mongodb.devrel.ClusteredCollectionTest",
     "warmup": false
