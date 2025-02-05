@@ -120,14 +120,14 @@ public class CoreMongoTest {
           cb =
               (long)
                   statusBefore
-                      .get("wiredTiger", Document.class)
-                      .get("cache", Document.class)
+                      .get("wiredTiger",  new Document())
+                      .get("cache",  new Document())
                       .getInteger("bytes read into cache");
         } catch (Exception e) {
           cb =
               statusBefore
-                  .get("wiredTiger", Document.class)
-                  .get("cache", Document.class)
+                  .get("wiredTiger", new Document())
+                  .get("cache", new Document())
                   .getLong("bytes read into cache");
         }
 
@@ -135,14 +135,14 @@ public class CoreMongoTest {
           ca =
               (long)
                   statusAfter
-                      .get("wiredTiger", Document.class)
-                      .get("cache", Document.class)
+                      .get("wiredTiger",  new Document())
+                      .get("cache", new Document())
                       .getInteger("bytes read into cache");
         } catch (Exception e) {
           ca =
               statusAfter
-                  .get("wiredTiger", Document.class)
-                  .get("cache", Document.class)
+                  .get("wiredTiger",  new Document())
+                  .get("cache",  new Document())
                   .getLong("bytes read into cache");
         }
 
