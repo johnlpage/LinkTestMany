@@ -94,17 +94,15 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     for (int op = 0; op < nOps ; op++) {
 
       int bpid = rng.nextInt(nBasePrices);
-
       int CruiseCode = bpid % nCruises; // Last bits
       int basePriceCode = (bpid / nCruises) % BPPerCruise;
-
 
       Document query = new Document();
       query.put("cruiseCode", "CRS" + CruiseCode);
       query.put("basePriceUUID", "CRS" + CruiseCode + "_BP" + basePriceCode);
       Document BasePriceDoc = base_pricing.find(query).first();
       if(BasePriceDoc == null) {
-        logger.error("Could not find base price for " + CruiseCode);
+        logger.error("Could not find base price for " + query.toString());
       }
 
       rng.setSeed(bpid);
@@ -136,7 +134,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
           UpdateResult a = testCollection.updateOne(updateSellingPriceKey, updateSellingPrice);
         if(a.getMatchedCount() == 0) {
-         logger.error("Could not update selling price for " + updateSellingPriceKey);
+        logger.error("Could not update selling price for " + updateSellingPriceKey.toBsonDocument().toJson());
         }
       }
 
@@ -207,7 +205,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
     int VariantsPerBP = testConfig.getInteger("meanVariantsPerBP");
 
-    int nDocs = nCruises * VariantsPerBP * BPPerCruise;
+    int nDocs = nCruises * BPPerCruise;
 
 
     int[] docIds = new int[nDocs];
@@ -237,12 +235,14 @@ public class ClusteredCollectionTest extends BaseMongoTest {
         logger.info("Loaded " + bp );
       }
       int bpid = docIds[bp]; // Build randomly
-      rng.setSeed(bpid);
-      int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
 
       // Create a base price record
       Document bprecord = generateRecord(bpid,1_000_000, rng);
       toAddBase.add(bprecord);
+
+
+      rng.setSeed(bpid); //Const no of SP for a bpid
+      int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
 
       for (int sp = 0; sp < nSellingPrices; sp++) {
         Document record = generateRecord(bpid,sp, rng);
@@ -277,6 +277,8 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
     // TODO
     record.put("_id", new ObjectId());
+    record.put("bpid", bpid);
+    record.put("variant", variant);
     record.put("cruiseCode", "CRS" + CruiseCode);
     record.put("basePriceUUID", "CRS" + CruiseCode + "_BP" + basePriceCode);
 
