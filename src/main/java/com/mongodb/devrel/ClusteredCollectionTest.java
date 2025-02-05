@@ -103,7 +103,9 @@ public class ClusteredCollectionTest extends BaseMongoTest {
       query.put("cruiseCode", "CRS" + CruiseCode);
       query.put("basePriceUUID", "CRS" + CruiseCode + "_BP" + basePriceCode);
       Document BasePriceDoc = base_pricing.find(query).first();
-
+      if(BasePriceDoc == null) {
+        logger.error("Could not find base price for " + CruiseCode);
+      }
 
       rng.setSeed(bpid);
       int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
@@ -133,7 +135,9 @@ public class ClusteredCollectionTest extends BaseMongoTest {
                 set("sellingPriceInfo", vals.get("sellingPriceInfo"));
 
           UpdateResult a = testCollection.updateOne(updateSellingPriceKey, updateSellingPrice);
-        //  logger.info(a.toString());
+        if(a.getMatchedCount() == 0) {
+         logger.error("Could not update selling price for " + updateSellingPriceKey);
+        }
       }
 
 
