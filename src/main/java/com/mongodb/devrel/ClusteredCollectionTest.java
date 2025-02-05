@@ -228,6 +228,9 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     List<Document> toAdd = new ArrayList<>();
     Random rng = new Random(); // Seeded RNG on base price
     for (int bp = 0; bp < nBasePrices; bp++) {
+      if(bp % 10000 == 0) {
+        logger.info("Loaded " + bp );
+      }
       int bpid = docIds[bp]; // Build randomly
       rng.setSeed(bpid);
       int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
