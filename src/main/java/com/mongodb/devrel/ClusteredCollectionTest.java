@@ -226,6 +226,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
     logger.info("Loading " + nBasePrices + " Base Prices into " + pricing.getNamespace());
 
     List<Document> toAdd = new ArrayList<>();
+    List<Document> toAddBase = new ArrayList<>();
     Random rng = new Random(); // Seeded RNG on base price
     for (int bp = 0; bp < nBasePrices; bp++) {
       if(bp % 10000 == 0) {
@@ -237,7 +238,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
 
       // Create a base price record
       Document bprecord = generateRecord(bpid,1_000_000, rng);
-      base_pricing.insertOne(bprecord);
+      toAddBase.add(bprecord);
 
       for (int sp = 0; sp < nSellingPrices; sp++) {
         Document record = generateRecord(bpid,sp, rng);
@@ -248,9 +249,16 @@ public class ClusteredCollectionTest extends BaseMongoTest {
           toAdd.clear();
         }
       }
+      if(toAddBase.size() > 1000) {
+        collection.insertMany(toAddBase);
+        base_pricing.clear();
+      }
     }
     if (!toAdd.isEmpty()) {
       collection.insertMany(toAdd);
+    }
+    if (!toAddBase.isEmpty()) {
+      base_pricing.insertMany(toAddBase);
     }
   }
 
