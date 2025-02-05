@@ -250,8 +250,8 @@ public class ClusteredCollectionTest extends BaseMongoTest {
         }
       }
       if(toAddBase.size() > 1000) {
-        collection.insertMany(toAddBase);
-        base_pricing.clear();
+        base_pricing.insertMany(toAddBase);
+        toAddBase.clear();
       }
     }
     if (!toAdd.isEmpty()) {
