@@ -213,33 +213,56 @@ public class ClusteredCollectionTest extends BaseMongoTest {
       docIds[o] = o;
     }
     shuffleArray(docIds);
+    int loaderThreads = 6;
+    List<Thread> loaders = new ArrayList<>();
 
-    CreateSampleDate(pricing, docIds);
-    if (testModes.contains("clustered")) {CreateSampleDate(clustered_pricing, docIds);}
+    for( int threadId = 0; threadId < loaderThreads; threadId++) {
+      final int t  = threadId;
+      Thread thread = new Thread(() -> {
+        CreateSampleDate(pricing, docIds, loaderThreads, t);
+      });
+      loaders.add(thread);
+      thread.start();
+    }
+
+    try {
+      for (Thread w : loaders) {
+        w.join(); // Waits for thread to finish
+     }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    /*if (testModes.contains("clustered")) {CreateSampleDate(clustered_pricing, docIds,1,0);}*/
   }
 
-  private void CreateSampleDate(MongoCollection<Document> collection, int[] docIds) {
+
+  private void CreateSampleDate(MongoCollection<Document> collection, int[] docIds, int loadThreads, int threadNo) {
 
     int nCruises = testConfig.getInteger("nCruises");
     int BPPerCruise = testConfig.getInteger("BPPerCruise");
     int meanVariantsPerBP = testConfig.getInteger("meanVariantsPerBP");
 
     int nBasePrices = nCruises * BPPerCruise;
-    logger.info("Loading " + nBasePrices + " Base Prices into " + pricing.getNamespace());
+
 
     List<Document> toAdd = new ArrayList<>();
     List<Document> toAddBase = new ArrayList<>();
+
     Random rng = new Random(); // Seeded RNG on base price
-    for (int bp = 0; bp < nBasePrices; bp++) {
-      if(bp % 10000 == 0) {
-        logger.info("Loaded " + bp );
+    int toLoad = nBasePrices / loadThreads;
+    int from=threadNo*toLoad;
+    int to=from+toLoad;
+    logger.info("Thread " + threadNo + " Loading " + toLoad + " Base Prices into " + pricing.getNamespace());
+    for (int bp = from; bp < to; bp++) {
+      if((bp-from)  % 10000 == 0) {
+        logger.info("Thread " + threadNo+" Loaded " + (bp - from) );
       }
       int bpid = docIds[bp]; // Build randomly
 
       // Create a base price record
       Document bprecord = generateRecord(bpid,1_000_000, rng);
       toAddBase.add(bprecord);
-
 
       rng.setSeed(bpid); //Const no of SP for a bpid
       int nSellingPrices = rng.nextInt(meanVariantsPerBP * 2);
