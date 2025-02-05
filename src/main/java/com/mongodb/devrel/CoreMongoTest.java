@@ -44,6 +44,7 @@ public class CoreMongoTest {
         logger.error("MONGO_URI not defined");
         System.exit(1);
       }
+      logger.info(mongoURI);
       mongoClient = MongoClients.create(mongoURI);
       Document rval = mongoClient.getDatabase("admin").runCommand(new Document("ping", 1));
       logger.info(rval.toJson());
@@ -111,7 +112,7 @@ public class CoreMongoTest {
         long opsPerSecond = (testConfig.getInteger("calls") * 1000) / timeTaken;
 
         statusAfter = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
-
+        logger.info("Test Complete");
         long cb;
         long ca;
         // Work round the fact this type changes!!
@@ -152,6 +153,7 @@ public class CoreMongoTest {
     } catch (Exception e) {
 
       logger.error("An error occurred: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 }
