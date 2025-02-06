@@ -37,7 +37,7 @@ public class CoreMongoTest {
 
     logger.info("Connecting to MongoDB...");
     MongoClient mongoClient = null;
-    ;
+
     try {
       String mongoURI = System.getenv("MONGO_URI");
       if (mongoURI == null) {
@@ -72,9 +72,8 @@ public class CoreMongoTest {
         testConfig.put("mode", testMode);
 
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-        if(testConfig.getBoolean("warmup", true)) {
+        if (testConfig.getBoolean("warmup", true)) {
           logger.info("Test Warmup Run");
-
 
           testConfig.put("warmup", true);
           for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
@@ -90,8 +89,8 @@ public class CoreMongoTest {
         }
 
         testConfig.put("warmup", false);
-        Document statusBefore = null;
-        Document statusAfter = null;
+        Document statusBefore;
+        Document statusAfter;
 
         statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
 
@@ -115,40 +114,47 @@ public class CoreMongoTest {
         logger.info("Test Complete");
         long cb;
         long ca;
-        // Work round the fact this type changes!!
-        try {
-          cb =
-              (long)
-                  statusBefore
-                      .get("wiredTiger",  new Document())
-                      .get("cache",  new Document())
-                      .getInteger("bytes read into cache");
-        } catch (Exception e) {
-          cb =
-              statusBefore
-                  .get("wiredTiger", new Document())
-                  .get("cache", new Document())
-                  .getLong("bytes read into cache");
+
+
+
+        if (statusBefore.getString("process").equals("mongod")) {
+          // this code only works for replica sets not sharded clusters
+          try {
+            // Work round the fact this type changes!
+            cb =
+                (long)
+                    statusBefore
+                        .get("wiredTiger", new Document())
+                        .get("cache", new Document())
+                        .getInteger("bytes read into cache");
+          } catch (Exception e) {
+            cb =
+                statusBefore
+                    .get("wiredTiger", new Document())
+                    .get("cache", new Document())
+                    .getLong("bytes read into cache");
+          }
+
+          try {
+            ca =
+                (long)
+                    statusAfter
+                        .get("wiredTiger", new Document())
+                        .get("cache", new Document())
+                        .getInteger("bytes read into cache");
+          } catch (Exception e) {
+            ca =
+                statusAfter
+                    .get("wiredTiger", new Document())
+                    .get("cache", new Document())
+                    .getLong("bytes read into cache");
+          }
+
+          logger.info("MB Read Into Cache during test: " + (ca - cb) / (1024 * 1024));
+          }
+          logger.info("Time: " + timeTaken / 1000 + " s " + opsPerSecond + " ops/s");
         }
 
-        try {
-          ca =
-              (long)
-                  statusAfter
-                      .get("wiredTiger",  new Document())
-                      .get("cache", new Document())
-                      .getInteger("bytes read into cache");
-        } catch (Exception e) {
-          ca =
-              statusAfter
-                  .get("wiredTiger",  new Document())
-                  .get("cache",  new Document())
-                  .getLong("bytes read into cache");
-        }
-
-        logger.info("MB Read Into Cache during test: " + (ca - cb)/(1024*1024));
-        logger.info("Time: " + timeTaken/1000 + " s " + opsPerSecond + " ops/s");
-      }
 
     } catch (Exception e) {
 
