@@ -213,7 +213,7 @@ public class ClusteredCollectionTest extends BaseMongoTest {
       docIds[o] = o;
     }
     shuffleArray(docIds);
-    int loaderThreads = 6;
+    int loaderThreads =  testConfig.getInteger("loaderThreads");
     List<Thread> loaders = new ArrayList<>();
 
     for( int threadId = 0; threadId < loaderThreads; threadId++) {

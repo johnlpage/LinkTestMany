@@ -7,6 +7,7 @@
     "BPPerCruise" : 250,
     "meanVariantsPerBP" : 40,
     "calls" : 100000,
+    "loaderThreads": 24,
     "testModes" : [ "basic"],
     "testName" : "com.mongodb.devrel.ClusteredCollectionTest",
     "warmup": false
