@@ -1,5 +1,5 @@
 {
-    "threads" : 100,
+    "threads" : 600,
     "database" : "cruiseline",
     "collection" : "sellingprice",
     "refcolname" : "baseprice",
