@@ -29,7 +29,7 @@ public class CoreMongoTest {
       String configString = new String(Files.readAllBytes(Paths.get(args[0])));
       testConfig = Document.parse(configString);
     } catch (Exception ex) {
-      logger.error("ERROR IN CONFIG" + ex.getMessage());
+      logger.error("ERROR IN CONFIG{}", ex.getMessage());
       return;
     }
 
@@ -76,36 +76,20 @@ public class CoreMongoTest {
           logger.info("Test Warmup Run");
 
           testConfig.put("warmup", true);
-          for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
-            BaseMongoTest t =
-                (BaseMongoTest)
-                    testClass.getDeclaredConstructors()[0].newInstance(
-                        mongoClient, testConfig, threadNo);
-
-            executorService.submit(t);
-          }
-          executorService.shutdown();
-          executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+          runTestsInParallel(testConfig, mongoClient, testClass, numberOfThreads, executorService);
         }
 
         testConfig.put("warmup", false);
         Document statusBefore;
         Document statusAfter;
 
+        assert mongoClient != null;
         statusBefore = mongoClient.getDatabase("admin").runCommand(new Document("serverStatus", 1));
 
         executorService = Executors.newFixedThreadPool(numberOfThreads);
-        logger.info("Test Live Run " + numberOfThreads + " threads");
+        logger.info("Test Live Run {} threads", numberOfThreads);
         Date startTime = new Date();
-        for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
-          BaseMongoTest t =
-              (BaseMongoTest)
-                  testClass.getDeclaredConstructors()[0].newInstance(
-                      mongoClient, testConfig, threadNo);
-          executorService.submit(t);
-        }
-        executorService.shutdown();
-        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        runTestsInParallel(testConfig, mongoClient, testClass, numberOfThreads, executorService);
         Date endTime = new Date();
         long timeTaken = endTime.getTime() - startTime.getTime();
         long opsPerSecond = (testConfig.getInteger("calls") * 1000) / timeTaken;
@@ -114,8 +98,6 @@ public class CoreMongoTest {
         logger.info("Test Complete");
         long cb;
         long ca;
-
-
 
         if (statusBefore.getString("process").equals("mongod")) {
           // this code only works for replica sets not sharded clusters
@@ -150,16 +132,37 @@ public class CoreMongoTest {
                     .getLong("bytes read into cache");
           }
 
-          logger.info("MB Read Into Cache during test: " + (ca - cb) / (1024 * 1024));
-          }
-          logger.info("Time: " + timeTaken / 1000 + " s " + opsPerSecond + " ops/s");
+          logger.info("MB Read Into Cache during test: {}", (ca - cb) / (1024 * 1024));
         }
-
+        logger.info("Time: {} s {} ops/s", timeTaken / 1000, opsPerSecond);
+      }
 
     } catch (Exception e) {
 
-      logger.error("An error occurred: " + e.getMessage());
+      logger.error("An error occurred: {}", e.getMessage());
       e.printStackTrace();
     }
+  }
+
+  private static void runTestsInParallel(
+      Document testConfig,
+      MongoClient mongoClient,
+      Class testClass,
+      int numberOfThreads,
+      ExecutorService executorService)
+      throws InstantiationException,
+          IllegalAccessException,
+          java.lang.reflect.InvocationTargetException,
+          InterruptedException {
+
+    for (int threadNo = 0; threadNo < numberOfThreads; threadNo++) {
+      BaseMongoTest t =
+          (BaseMongoTest)
+              testClass.getDeclaredConstructors()[0].newInstance(mongoClient, testConfig, threadNo);
+
+      executorService.submit(t);
+    }
+    executorService.shutdown();
+    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
   }
 }

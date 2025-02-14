@@ -17,11 +17,9 @@ public class BaseMongoTest implements Runnable {
   }
 
   public void WarmCache() {
-    return;
   }
 
   public void TestReset() {
-    return;
   }
 
   @Override

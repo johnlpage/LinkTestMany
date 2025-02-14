@@ -1,15 +1,17 @@
 {
-    "threads" : 600,
-    "database" : "cruiseline",
-    "collection" : "sellingprice",
-    "refcolname" : "baseprice",
-    "nCruises" : 5000,
-    "BPPerCruise" : 400,
-    "meanVariantsPerBP" : 40,
-    "calls" : 100000,
-    "loaderThreads": 24,
-    "testModes" : [ "basic"],
-    "testName" : "com.mongodb.devrel.ClusteredCollectionTest",
-    "warmup": false
+  "threads": 600,
+  "database": "cruiseline",
+  "collection": "sellingprice",
+  "refcolname": "baseprice",
+  "nCruises": 5000,
+  "BPPerCruise": 400,
+  "meanVariantsPerBP": 40,
+  "calls": 100000,
+  "loaderThreads": 24,
+  "testModes": [
+    "basic"
+  ],
+  "testName": "com.mongodb.devrel.ClusteredCollectionTest",
+  "warmup": false
 }
 

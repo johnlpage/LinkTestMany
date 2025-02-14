@@ -36,8 +36,8 @@ public class TinyEditTest extends BaseMongoTest {
         intRepresentation = (intRepresentation << 8) | (b & 0xFF);
       }
       // Format the integer as an 8-character hexadecimal string
-       ipHex = String.format("%08X", intRepresentation);
-      //logger.info("IP address: " + ipHex + " for thread: " + threadNo);
+      ipHex = String.format("%08X", intRepresentation);
+      // logger.info("IP address: " + ipHex + " for thread: " + threadNo);
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }

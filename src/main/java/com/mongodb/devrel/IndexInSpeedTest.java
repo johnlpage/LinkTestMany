@@ -23,8 +23,8 @@ public class IndexInSpeedTest extends BaseMongoTest {
   MongoDatabase database;
   MongoCollection<Document> coll_one;
   MongoCollection<Document> coll_two;
-  private long threadNo;
-  private Random rng;
+  private final long threadNo;
+  private final Random rng;
 
   IndexInSpeedTest(MongoClient client, Document config, long threadNo) {
     super(client, config);
@@ -67,7 +67,7 @@ public class IndexInSpeedTest extends BaseMongoTest {
                 + query.toBsonDocument().toJson());
         logger.info(
             "Data Return Size (MB) : "
-                + ((long) ((long) target.get(0).toJson().length() * target.size() * (long) nTests)
+                + (((long) target.get(0).toJson().length() * target.size() * (long) nTests)
                     / (1024 * 1024)));
       }
     }
@@ -91,7 +91,7 @@ public class IndexInSpeedTest extends BaseMongoTest {
 
       d.put("_id", id);
       d.put("key", id);
-      d.put("mkey", asList(id));
+      d.put("mkey", List.of(id));
       d.put("spl", "Small Payload");
       byte[] byteArray = new byte[payloadbytes];
       rng.nextBytes(byteArray);
@@ -116,7 +116,7 @@ public class IndexInSpeedTest extends BaseMongoTest {
 
     // Has to check every document for this non existent field
     Bson touch = group("$nonexistent", sum("count", 1));
-    Document rval = coll_one.aggregate(asList(touch)).first();
+    Document rval = coll_one.aggregate(List.of(touch)).first();
     logger.info("Warming Done " + rval.toJson());
   }
 }

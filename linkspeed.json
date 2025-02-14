@@ -1,11 +1,14 @@
 {
-    "threads" : 20,
-    "database" : "linktest",
-    "cardinality" : 25,
-    "records" : 1000000,
-    "calls" : 1000000,
-    "payLoadBytes" : 1048,
-    "testModes" : [ "_id->links", "links->_id"],
-    "rangesize":100,
-    "testName" : "com.mongodb.devrel.LinkSpeedTest"
+  "threads": 20,
+  "database": "linktest",
+  "cardinality": 25,
+  "records": 1000000,
+  "calls": 1000000,
+  "payLoadBytes": 1048,
+  "testModes": [
+    "_id->links",
+    "links->_id"
+  ],
+  "rangesize": 100,
+  "testName": "com.mongodb.devrel.LinkSpeedTest"
 }
